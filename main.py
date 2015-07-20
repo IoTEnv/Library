@@ -4,9 +4,16 @@ import types
 import time
 import threading
 import paho.mqtt.client as mqtt
+import lightblue
+import urllib
+import urllib.parse
+import urllib.request
+import lightblue
 
 EXPIRE_TIME = 1000
 DEVICE_ID = "IOT Scripting"
+IOT_CONTEXT = "IOT"
+IMPROMPTO_APP_ID = "12345"
 
 scanAndRecordDeamon = None
 client = mqtt.Client()
@@ -34,6 +41,27 @@ def scanThings():
     """scan the things"""
     f = open("./Schema/vibrate.cleaned.json")
     scanResult = json.loads(f.read())
+    print("bluetooth scan STARTED")
+    deviceList = lightblue.finddevices()
+    print("bluetooth scan COMPLETED")
+    deviceProfiles = [];
+    for MACaddress, deviceName, deviceNum in deviceList:
+        splittedName = deviceName.split('::')
+        if len(splittedName):
+            deviceName = splittedName[0]
+            deviceProfURL = splittedName[1]
+            deviceKey = splittedName[2]
+            requestPayload = {
+                "deviceID": deviceName,
+                "appID" : IMPROMPTO_APP_ID,
+                "key" : deviceKey,
+                "context[]" : IOT_CONTEXT
+            }
+            encodedRequestPayload = urllib.urlencode(requestPayload)
+            full_url = deviceProfURL + "?" + encodedRequestPayload
+            data = urllib.urlopen(full_url)
+            deviceProfiles.append(json.parse(data.read()))
+    print(deviceList)
     print( "scanThings ENDED")
     return scanResult
 
@@ -183,7 +211,7 @@ def initialize():
     ScanAndRecordDeamon()
 
 if __name__ == '__main__':
-    initialize()
+    # initialize()
     scanAndRecord()
     # aThing.identify()
     print("### test thing list")
