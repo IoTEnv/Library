@@ -4,16 +4,17 @@ import types
 import time
 import threading
 import paho.mqtt.client as mqtt
-import lightblue
+import bluetooth
 import urllib
 import urllib.parse
 import urllib.request
-import lightblue
+from operator import attrgetter
 
 EXPIRE_TIME = 1000
 DEVICE_ID = "IOT Scripting"
 IOT_CONTEXT = "IOT"
 IMPROMPTO_APP_ID = "12345"
+IMPROMPTO_PROTOCOL_VERSION = 1
 
 scanAndRecordDeamon = None
 client = mqtt.Client()
@@ -37,32 +38,36 @@ def sendRequest(url, obj, request):
 
 # scan nearby things, this will be automatically called in certain interval
 def scanThings():
-    print( "scanThings CALLED")
     """scan the things"""
     f = open("./Schema/vibrate.cleaned.json")
-    scanResult = json.loads(f.read())
-    print("bluetooth scan STARTED")
-    deviceList = lightblue.finddevices()
-    print("bluetooth scan COMPLETED")
+    # scanResult = json.loads(f.read())
+    deviceList = bluetooth.discover_devices(lookup_names=True)
     deviceProfiles = [];
-    for MACaddress, deviceName, deviceNum in deviceList:
+    for MACaddress, deviceName in deviceList:
         splittedName = deviceName.split('::')
-        if len(splittedName):
-            deviceName = splittedName[0]
-            deviceProfURL = splittedName[1]
-            deviceKey = splittedName[2]
+        # print(splittedName)
+        if len(splittedName) == 4:
+            deviceName = splittedName[1]
+            deviceProfURL = splittedName[2]
+            deviceKey = splittedName[3]
             requestPayload = {
                 "deviceID": deviceName,
                 "appID" : IMPROMPTO_APP_ID,
                 "key" : deviceKey,
                 "context[]" : IOT_CONTEXT
             }
-            encodedRequestPayload = urllib.urlencode(requestPayload)
+            encodedRequestPayload = urllib.parse.urlencode(requestPayload)
             full_url = deviceProfURL + "?" + encodedRequestPayload
-            data = urllib.urlopen(full_url)
-            deviceProfiles.append(json.parse(data.read()))
-    print(deviceList)
-    print( "scanThings ENDED")
+            data = urllib.request.urlopen(full_url)
+            deviceProfile = json.loads(data.read().decode('UTF-8'))
+            if "IOT" in deviceProfile.keys():
+                deviceProfile = deviceProfile["IOT"]
+                deviceProfile["rssi"] = "-22" # temp workaround
+                deviceProfile["uuid"] = deviceName
+                deviceProfile["name"] = deviceName
+                deviceProfiles.append(deviceProfile)
+    scanResult = deviceProfiles
+    print(scanResult)
     return scanResult
 
 class ThingList(list):
@@ -98,19 +103,19 @@ class Thing(object):
     """docstring for Thing"""
     def __init__(self, JSONthing, parent = None):
         super(Thing, self).__init__()
-        self._uuid = JSONthing["@uuid"]
-        self._type = JSONthing["@type"]
+        self._uuid = JSONthing["uuid"]
+        self._type = JSONthing["type"]
         self._timestamp = time.time()
-        if "@rssi" in JSONthing:
-            self._rssi = int(JSONthing["@rssi"])
+        if "rssi" in JSONthing:
+            self._rssi = int(JSONthing["rssi"])
         else:
             self._rssi = parent._rssi
-        if "@name" in JSONthing:
-            self._name = JSONthing["@name"]
+        if "name" in JSONthing:
+            self._name = JSONthing["name"]
         else:
             self._name = parent._name + "." + self._type
         self._nested = [];
-        for capName, capDes in JSONthing["@cap"].items():
+        for capName, capDes in JSONthing["capability"].items():
             def function(self, *request):
                 JSONrequest = copy.deepcopy(capDes["input"])
                 for x in range(0, len(request)):
@@ -119,7 +124,7 @@ class Thing(object):
                     "contextType":"IOT",
                     "command": capDes["command"],
                     "messageType": capDes["messageType"],
-                    "version" : capDes["version"],
+                    "version" : IMPROMPTO_PROTOCOL_VERSION,
                     "deviceID" : DEVICE_ID,
                     "destination":[
                         self._uuid
@@ -151,10 +156,10 @@ class Thing(object):
             warning(self, "does not support ")
         return method
 
-class Please(object):
-    """docstring for Please"""
+class IOT(object):
+    """docstring for IOT"""
     def __init__(self, arg):
-        super(Please, self).__init__()
+        super(IOT, self).__init__()
         self.arg = arg
     @staticmethod
     def find(rule, types = None):
@@ -166,18 +171,23 @@ class Please(object):
         elif isinstance(types, str):
             filteredThingsList = filter(lambda x: x._type == types, thingsList)
             return ThingList(rule(filteredThingsList))
+    def findAll():
+        return thingsList
+    def findNearest():
+        def Nearest(things):
+            return ThingList([max(things, key=attrgetter("rssi"))])
+        return IOT.find(Nearest)
 
 def All(things):
     return things
 
-def Nearest(things):
-    return ThingList([max(things, lambda x: x._rssi)])
-
 def scanAndRecord():
+    print("scanning")
     JSONthingList = scanThings()
     for JSONthing in JSONthingList:
         thingsList.append(Thing(JSONthing))
     thingsList.cleanList()
+    print("wait...")
     return
 
 class ScanAndRecordDeamon(object):
@@ -212,12 +222,12 @@ def initialize():
 
 if __name__ == '__main__':
     # initialize()
-    scanAndRecord()
+    # scanAndRecord()
     # aThing.identify()
-    print("### test thing list")
-    thingsList.identify()
-    print("### test find all")
-    Please.find(All).identify()
-    print("### test find phone")
-    Please.find(All, "phone").identify()
+    # print("### test thing list")
+    # thingsList.identify()
+    # print("### test find all")
+    # IOT.find(All).identify()
+    # print("### test find phone")
+    # IOT.find(All, "phone").identify()
     pass
