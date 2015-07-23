@@ -4,6 +4,7 @@ from .common import *
 from .communication import *
 
 class Thing(object):
+    _func = []
     def __init__(self, obj):
         super(Thing, self).__init__()
         if isinstance(obj, str):
@@ -22,12 +23,18 @@ class Thing(object):
         self._type.extend([JSONthing["type"]])
         self._name = JSONthing["name"]
         for capName, capDes in JSONthing["capability"].items():
-            def function(self, *request):
+            def afunc(self, *request, capName = capName, capDes = capDes):
+                debug(capName, capDes["command"])
                 JSONrequest = copy.deepcopy(capDes["input"])
                 for x in range(0, len(request)):
-                    JSONrequest.values()[x] = request[x]
+                    JSONrequest["TEXT"] = request[x]
+                payload  = []
+                debug(JSONrequest)
+                if isinstance(JSONrequest, dict):
+                    for key, value in JSONrequest.items():
+                        payload.append(key + "=" + value)
                 MQTTpayload = {
-                    "contextType":"IOT",
+                    "contextType":IMPROMPTO_COMMAND_CONTEXT,
                     "command": capDes["command"],
                     "messageType": capDes["messageType"],
                     "version" : IMPROMPTO_PROTOCOL_VERSION,
@@ -35,14 +42,12 @@ class Thing(object):
                     "destination":[
                         self._uuid
                     ],
-                    "payload": [
-                        "PARAMETERS=" + json.dumps(JSONrequest)
-                    ]
+                    "payload": payload
                 }
-                print("payload is ", type(json.dumps(MQTTpayload)))
+                debug("payload is ", json.dumps(MQTTpayload))
                 response = send(capDes["channel"], json.dumps(MQTTpayload));
                 return response
-            setattr(self, capName, types.MethodType(function, self))
+            setattr(self, capName, types.MethodType(afunc, self))
 
     def __str__(self):
         if(isinstance(self, ContextualThing)):

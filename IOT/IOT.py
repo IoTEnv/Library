@@ -28,8 +28,8 @@ def selectAll(types = None):
 
 def selectNearest(types = None):
     def nearest(list):
-        contextualThings = filter(lambda thing: isinstance(thing, ContextualThing))
-        return [max(contextualThings, key = lambda thing: int(thing.rssi))]
+        contextualThings = filter(lambda thing: isinstance(thing, ContextualThing), bluewaveDevices)
+        return [max(contextualThings, key = lambda thing: int(thing._rssi))]
     return select(nearest, types)
 
 def list():

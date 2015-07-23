@@ -25,7 +25,7 @@ class BluewaveDiscoverer(bluetooth.DeviceDiscoverer):
 
     def device_discovered (self, address, device_class, rssi, name):
         try:
-            debug("device found: ", name, rssi)
+            # debug("device found: ", name, rssi)
             name = name.decode("ISO-8859-1")
             splittedName = name.split('::')
             if len(splittedName) == 4 and splittedName[0] == "GCF":
@@ -40,15 +40,20 @@ class BluewaveDiscoverer(bluetooth.DeviceDiscoverer):
                 }
                 encodedPayload = urllib.parse.urlencode(requestPayload)
                 fullURL = deviceURL + "?" + encodedPayload
+                # debug(fullURL)
                 data = urllib.request.urlopen(fullURL)
-                deviceProfile = json.loads(data.read().decode("UTF-8"))
-                if "IOT" in deviceProfile.keys():
-                    deviceProfile = deviceProfile["IOT"]
-                    deviceProfile["uuid"] = deviceName
-                    deviceProfile["name"] = deviceName
-                    if "nested" in deviceProfile.keys():
-                        warning("nested is not yet implemented!")
-                    bluewaveDevices.add(ContextualThing(deviceProfile, time.time(), rssi))
+                deviceProfiles = json.loads(data.read().decode("UTF-8"))
+                if "IOT" in deviceProfiles.keys():
+                    for deviceProfile in deviceProfiles["IOT"]:
+                        deviceProfile["uuid"] = deviceName
+                        deviceProfile["name"] = deviceName
+                        if "nested" in deviceProfile.keys():
+                            warning("nested is not yet implemented!")
+                        # debug(deviceProfile)
+                        newThing = ContextualThing(deviceProfile, time.time(), rssi)
+                        if newThing in bluewaveDevices:
+                            bluewaveDevices.remove(newThing)
+                        bluewaveDevices.add(newThing)
         except:
             e = sys.exc_info()[0]
             debug("device_discovered exception: ", e)
