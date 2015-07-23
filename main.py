@@ -206,9 +206,9 @@ class ScanAndRecordDeamon(object):
 def initializeMQTT():
     def on_connect(client, userdata, rc):
         print("Connected with result code" + str(rc))
-        client.subscribe("cmu/gcf_framework")
     def on_message(client, userdata, msg):
         print(msg.topic + " " + str(msg.payload))
+    client.subscribe("cmu/gcf_framework")
     client.on_connect = on_connect
     client.on_message = on_message
     client.connect("epiwork.hcii.cs.cmu.edu", 1883)
