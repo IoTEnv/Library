@@ -22,5 +22,5 @@ def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
 
 def debug(*objs):
-    if debug:
+    if debug == True:
         print(*objs)

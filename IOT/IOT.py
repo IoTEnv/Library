@@ -31,3 +31,7 @@ def selectNearest(types = None):
         contextualThings = filter(lambda thing: isinstance(thing, ContextualThing))
         return [max(contextualThings, key = lambda thing: int(thing.rssi))]
     return select(nearest, types)
+
+def list():
+    for device in bluewaveDevices:
+        print(str(device))

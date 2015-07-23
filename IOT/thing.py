@@ -13,12 +13,13 @@ class Thing(object):
         elif isinstance(obj, dict):
             JSONthing = obj
             self._uuid = JSONthing["uuid"]
+            self._type = []
             self._appendFeature(JSONthing)
         else:
             warning("obj is in unsupported type")
 
     def _appendFeature(self, JSONthing):
-        self._type.extend(JSONthing["type"])
+        self._type.extend([JSONthing["type"]])
         self._name = JSONthing["name"]
         for capName, capDes in JSONthing["capability"].items():
             def function(self, *request):
@@ -44,7 +45,11 @@ class Thing(object):
             setattr(self, capName, types.MethodType(function, self))
 
     def __str__(self):
-        return "{ name: " + self._name + ", uuid: " + self._uuid + "}";
+        if(isinstance(self, ContextualThing)):
+            return "{ name: " + self._name + ", type: " + json.dumps(self._type) + ", rssi: " + str(self._rssi) + "}"
+        else:
+            return "{ name: " + self._name + ", type: " + json.dumps(self._type) + "}"
+
 
     # prevent Thing from throwing exception
     def __getattr__(self, name):
@@ -72,5 +77,5 @@ class ContextualThing(Thing):
     """docstring for ContextualThing"""
     def __init__(self, JSONthing, timestamp, rssi):
         super(ContextualThing, self).__init__(JSONthing)
-        self.timestamp = timestamp
-        self.rssi = rssi
+        self._timestamp = timestamp
+        self._rssi = rssi

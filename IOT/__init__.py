@@ -2,7 +2,7 @@ __author__ = 'Jackie'
 
 from .bluewave import initializeBluewave
 from .communication import initializeMQTT
-from .IOT import select, selectAll
+from .IOT import *
 from .thing import Thing, ThingsList
 
 def initialize():
