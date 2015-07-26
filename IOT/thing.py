@@ -4,7 +4,7 @@ from .common import *
 from .mqtt import *
 
 class Thing(object):
-    _func = []
+    _func = {}
     def __init__(self, obj):
         super(Thing, self).__init__()
         if isinstance(obj, str):
@@ -47,6 +47,7 @@ class Thing(object):
                 debug("payload is ", json.dumps(MQTTpayload))
                 response = send(capDes["channel"], json.dumps(MQTTpayload));
                 return response
+            self._func[capName] = afunc
             setattr(self, capName, types.MethodType(afunc, self))
 
     def __str__(self):
@@ -57,10 +58,10 @@ class Thing(object):
 
 
     # prevent Thing from throwing exception
-    def __getattr__(self, name):
-        def method(*args):
-            warning(self, "does not support ", name)
-        return method
+    # def __getattr__(self, name):
+    #     def method(*args):
+    #         warning(self, "does not support ", name)
+    #     return method
 
     def __hash__(self):
         return hash(self._uuid)
@@ -68,15 +69,26 @@ class Thing(object):
     def __eq__(self, other):
         return hash(self) == hash(other)
 
-class ThingsList(list):
+    def __dir__(self):
+        return self._func.keys()
+
+class ThingsList(object):
     """docstring for ThingList"""
+
+    def __init__(self, *objs):
+        super(ThingsList, self).__init__()
+        self.l = list(*objs)
 
     # dispatch the method to the list
     def __getattr__(self, name):
         def method(*args):
-            for obj in self:
+            for obj in self.l:
                 getattr(obj, name)(*args)
         return method
+
+    def __dir__(self):
+        funclist = (set(device.__dir__()) for device in self.l)
+        return set.intersection(*funclist)
 
 class ContextualThing(Thing):
     """docstring for ContextualThing"""
