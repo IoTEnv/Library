@@ -2,6 +2,8 @@ __author__ = 'Jackie'
 
 import sys
 import paho.mqtt.client as mqtt
+import json
+import collections
 
 DEBUG = False
 appID = None
@@ -25,3 +27,6 @@ def warning(*objs):
 def debug(*objs):
     if DEBUG == True:
         print(*objs)
+
+jsonDecode = json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode
+jsonEncode = json.dumps

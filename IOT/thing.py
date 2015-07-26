@@ -27,7 +27,7 @@ class Thing(object):
                 debug(capName, capDes["command"])
                 JSONrequest = copy.deepcopy(capDes["input"])
                 for x in range(0, len(request)):
-                    JSONrequest["TEXT"] = request[x]
+                    JSONrequest[list(JSONrequest.keys())[x]] = request[x]
                 payload  = []
                 debug(JSONrequest)
                 if isinstance(JSONrequest, dict):
@@ -44,17 +44,17 @@ class Thing(object):
                     ],
                     "payload": payload
                 }
-                debug("payload is ", json.dumps(MQTTpayload))
-                response = send(capDes["channel"], json.dumps(MQTTpayload));
+                debug("payload is ", jsonEncode(MQTTpayload))
+                response = send(capDes["channel"], jsonEncode(MQTTpayload));
                 return response
             self._func[capName] = afunc
             setattr(self, capName, types.MethodType(afunc, self))
 
     def __str__(self):
         if(isinstance(self, ContextualThing)):
-            return "{ name: " + self._name + ", type: " + json.dumps(self._type) + ", rssi: " + str(self._rssi) + "}"
+            return "{ name: " + self._name + ", type: " + jsonEncode(self._type) + ", rssi: " + str(self._rssi) + "}"
         else:
-            return "{ name: " + self._name + ", type: " + json.dumps(self._type) + "}"
+            return "{ name: " + self._name + ", type: " + jsonEncode(self._type) + "}"
 
 
     # prevent Thing from throwing exception

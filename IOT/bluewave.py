@@ -42,7 +42,7 @@ class BluewaveDiscoverer(bluetooth.DeviceDiscoverer):
                 fullURL = deviceURL + "?" + encodedPayload
                 # debug(fullURL)
                 data = urllib.request.urlopen(fullURL)
-                deviceProfiles = json.loads(data.read().decode("UTF-8"))
+                deviceProfiles = jsonDecode(data.read().decode("UTF-8"))
                 if "IOT" in deviceProfiles.keys():
                     for deviceProfile in deviceProfiles["IOT"]:
                         deviceProfile["uuid"] = deviceName
