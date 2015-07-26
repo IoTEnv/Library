@@ -1,6 +1,6 @@
 from .bluewave import *
 from .thing import *
-from .communication import *
+from .mqtt import *
 
 def select(rule, types = None):
     if types == None:

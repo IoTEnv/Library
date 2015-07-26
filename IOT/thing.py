@@ -1,7 +1,7 @@
 import types
 
 from .common import *
-from .communication import *
+from .mqtt import *
 
 class Thing(object):
     _func = []
