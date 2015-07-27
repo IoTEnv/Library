@@ -52,10 +52,12 @@ class Thing(object):
 
     def __str__(self):
         if(isinstance(self, ContextualThing)):
-            return "{ name: " + self._name + ", type: " + jsonEncode(self._type) + ", rssi: " + str(self._rssi) + "}"
+            return "{ name: " + self._name + ", rssi: " + str(self._rssi) + ", type: " + jsonEncode(self._type) + ", lastseen: " + time.ctime(self._timestamp) + "}"
         else:
             return "{ name: " + self._name + ", type: " + jsonEncode(self._type) + "}"
 
+    def __repr__(self):
+        return "<" + str(self) + ">"
 
     # prevent Thing from throwing exception
     # def __getattr__(self, name):
@@ -89,6 +91,12 @@ class ThingsList(object):
     def __dir__(self):
         funclist = (set(device.__dir__()) for device in self.l)
         return set.intersection(*funclist)
+
+    def __str__(self):
+        return self.l.__str__()
+
+    def __repr__(self):
+        return self.l.__str__()
 
 class ContextualThing(Thing):
     """docstring for ContextualThing"""
