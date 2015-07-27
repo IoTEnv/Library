@@ -14,12 +14,16 @@ from .common import *
 
 def initializeMQTT():
     def on_connect(client, userdata, rc):
-        debug("Connected with result code" + str(rc))
+        debug("client connected with result code" + str(rc))
         pass
     def on_message(client, userdata, msg):
         debug(msg.topic + " " + str(msg.payload))
         for function in mqttSubscribedFunctions[msg.topic]:
             function(msg)
+    def on_disconnect(client, userdata, rc):
+        debug("client disconnected!")
+        client.connect(serverAddr, serverPort)
+        debug("client reconnecting...")
     mqttClient.on_connect = on_connect
     mqttClient.on_message = on_message
     mqttClient.connect(serverAddr, serverPort)
