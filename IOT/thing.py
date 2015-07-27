@@ -4,9 +4,9 @@ from .common import *
 from .mqtt import *
 
 class Thing(object):
-    _func = {}
     def __init__(self, obj):
         super(Thing, self).__init__()
+        self._func = {}
         if isinstance(obj, str):
             self._uuid = obj
             self._type = []
