@@ -104,6 +104,9 @@ class ThingsList(object):
     def __getitem__(self, key):
         return self.l.__getitem__(key)
 
+    def __len__(self):
+        return self.l.__len__()
+
 class ContextualThing(Thing):
     """docstring for ContextualThing"""
     def __init__(self, JSONthing, timestamp, rssi):
