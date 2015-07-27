@@ -8,14 +8,14 @@ def select(rule, types = None):
     elif isinstance(types, str):
         devices = []
         for device in bluewaveDevices:
-            if types in device.type:
+            if types in device._type:
                 devices.append(device)
         return ThingsList(rule(devices))
     elif isinstance(types, list):
         devices = []
         for deviceType in types:
             for device in bluewaveDevices:
-                if deviceType in device.type:
+                if deviceType in device._type:
                     devices.append(device)
         return ThingsList(rule(devices))
     else:
