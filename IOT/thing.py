@@ -98,6 +98,12 @@ class ThingsList(object):
     def __repr__(self):
         return self.l.__str__()
 
+    def __iter__(self):
+        return self.l.__iter__()
+
+    def __getitem__(self, key):
+        return self.l.__getitem__(key)
+
 class ContextualThing(Thing):
     """docstring for ContextualThing"""
     def __init__(self, JSONthing, timestamp, rssi):
