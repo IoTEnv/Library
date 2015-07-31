@@ -12,6 +12,7 @@ serverPort = 1883
 clientID = None
 mqttClient = mqtt.Client()
 mqttSubscribedFunctions = {}
+expireTime = 30
 
 
 IMPROMPTO_APP_ID = "12345"

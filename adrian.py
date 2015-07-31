@@ -25,15 +25,10 @@ def notifyMe(urgent):
 
 while True:
     if isAdrianAround():
-        print("Adrian is around " + adrianDis())
+        print("Adrian is around ", adrianDis())
     if isAdrianAround() and adrianDis() > -75:
         if adrianDis() > -65:
             notifyMe(True)
         else:
             notifyMe(False)
     time.sleep(2)
-# while True:
-#     notifyMe(True)
-#     # IOT.selectAll().notify()
-#     IOT.initializeMQTT()
-#     time.sleep(5)
