@@ -171,8 +171,10 @@ class IOT(object):
         elif isinstance(types, str):
             filteredThingsList = filter(lambda x: x._type == types, thingsList)
             return ThingList(rule(filteredThingsList))
+    @staticmethod
     def findAll():
         return thingsList
+    @staticmethod
     def findNearest():
         def Nearest(things):
             return ThingList([max(things, key=attrgetter("rssi"))])

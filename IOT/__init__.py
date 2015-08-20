@@ -1,7 +1,7 @@
 __author__ = 'Jackie'
 
-from .bluewave import initializeBluewave
-from .mqtt import initializeMQTT
+from .Discovery import initializeBluewave
+from .Communication import initializeMQTT
 from .IOT import *
 from .thing import Thing, ThingsList
 

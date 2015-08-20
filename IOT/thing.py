@@ -1,7 +1,7 @@
 import types
 
 from .common import *
-from .mqtt import *
+from .Communication import *
 
 class Thing(object):
     def __init__(self, obj):

@@ -1,17 +1,10 @@
 __author__ = 'Jackie'
 
 import sys
-import paho.mqtt.client as mqtt
-import json
 import collections
 
 DEBUG = False
 appID = None
-serverAddr = "epiwork.hcii.cs.cmu.edu"
-serverPort = 1883
-clientID = None
-mqttClient = mqtt.Client()
-mqttSubscribedFunctions = {}
 expireTime = 30
 
 
@@ -21,13 +14,9 @@ IMPROMPTO_DEVICE_ID = "IOT Scripting"
 IMPROMPTO_IOT_CONTEXT = "IOT"
 IMPROMPTO_COMMAND_CONTEXT = "IOT_TABLET_LIGHT"
 
-
 def warning(*objs):
     print("WARNING: ", *objs, file=sys.stderr)
 
 def debug(*objs):
     if DEBUG == True:
         print(*objs)
-
-jsonDecode = json.JSONDecoder(object_pairs_hook=collections.OrderedDict).decode
-jsonEncode = json.dumps

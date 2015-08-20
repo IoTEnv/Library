@@ -4,13 +4,15 @@ import copy
 import time
 import threading
 import paho.mqtt.client as mqtt
-import bluetooth
 import urllib
 import urllib.parse
 import urllib.request
 from operator import attrgetter
 
 from .common import *
+
+mqttClient = mqtt.Client()
+mqttSubscribedFunctions = {}
 
 def initializeMQTT():
     def on_connect(client, userdata, rc):
@@ -22,42 +24,42 @@ def initializeMQTT():
             function(msg)
     def on_disconnect(client, userdata, rc):
         debug("client disconnected!")
-        client.connect(serverAddr, serverPort)
+        client.connect(serverAddress, serverPort)
         debug("client reconnecting...")
     mqttClient.on_connect = on_connect
     mqttClient.on_message = on_message
-    mqttClient.connect(serverAddr, serverPort)
+    mqttClient.connect(serverAddress, serverPort)
     mqttClient.publish("IOT/debug", payload = str(clientID) + " connected", qos = 0, retain = False)
     debug("mqtt client initialized")
 
 
-class mqttChannelList(list):
-    """docstring for mqttChannelList"""
+class MqttChannelList(list):
+    """docstring for MqttChannelList"""
     def __init__(self, channel):
-        super(mqttChannelList, self).__init__()
+        super(MqttChannelList, self).__init__()
         self.channel = channel
         mqttSubscribedFunctions[channel] = self
         mqttClient.subscribe(channel)
 
     def remove(self, obj):
-        super(mqttChannelList, self)
-        if len(super(mqttChannelList, self)) == 0:
+        super(MqttChannelList, self)
+        if len(self) == 0:
             mqttClient.unsubscribe(self.channel)
             del mqttSubscribedFunctions[self.channel]
 
 def getMqttChannel(channel):
-    if channel in mqttSubscribedFunctions.dict():
+    if channel in mqttSubscribedFunctions:
         return mqttSubscribedFunctions[channel]
     else:
-        mqttSubscribedFunctions[channel] = mqttChannelList(channel)
+        mqttSubscribedFunctions[channel] = MqttChannelList(channel)
         return mqttSubscribedFunctions[channel]
 
-class mqttSubscriber(object):
-    """docstring for mqttSubscriber"""
+class MqttSubscriber(object):
+    """docstring for MqttSubscriber"""
     mqttChannel = None
     mqttFunction = None
     def __init__(self, channel, function):
-        super(mqttSubscriber, self).__init__()
+        super(MqttSubscriber, self).__init__()
         self.mqttChannel = getMqttChannel(channel)
         self.mqttFunction = function
         self.mqttChannel.append(self.mqttFunction)
@@ -66,7 +68,7 @@ class mqttSubscriber(object):
         self.mqttChannel.remove(self.mqttFunction)
 
 def subscribe(channel, function):
-    return mqttSubscriber(channel, function)
+    return MqttSubscriber(channel, function)
 
 def send(channel, message):
     mqttClient.publish(channel, payload = message, qos = 0, retain = False)
