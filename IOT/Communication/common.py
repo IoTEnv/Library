@@ -1,6 +1,7 @@
 import sys
 
 serverAddress = "epiwork.hcii.cs.cmu.edu"
+# serverAddress = "bluetest.yangjunrui.com"
 serverPort = 1883
 DEBUG = False
 clientID = None

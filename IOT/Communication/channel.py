@@ -1,18 +1,11 @@
-import sys
-import json
-import copy
-import time
-import threading
 import paho.mqtt.client as mqtt
-import urllib
-import urllib.parse
-import urllib.request
-from operator import attrgetter
-
 from .common import *
 
+import threading
+
 mqttClient = mqtt.Client()
-mqttSubscribedFunctions = {}
+mqttSubscribedChannels = {}
+mqttThread = None
 
 def initializeMQTT():
     def on_connect(client, userdata, rc):
@@ -20,7 +13,8 @@ def initializeMQTT():
         pass
     def on_message(client, userdata, msg):
         debug(msg.topic + " " + str(msg.payload))
-        for function in mqttSubscribedFunctions[msg.topic]:
+        for function in mqttSubscribedChannels[msg.topic]:
+            # threading.Thread(target=function, args=(msg))
             function(msg)
     def on_disconnect(client, userdata, rc):
         debug("client disconnected!")
@@ -28,31 +22,32 @@ def initializeMQTT():
         debug("client reconnecting...")
     mqttClient.on_connect = on_connect
     mqttClient.on_message = on_message
+    mqttClient.on_disconnect = on_disconnect
     mqttClient.connect(serverAddress, serverPort)
     mqttClient.publish("IOT/debug", payload = str(clientID) + " connected", qos = 0, retain = False)
     debug("mqtt client initialized")
-
+    mqttClient.loop_start()
 
 class MqttChannelList(list):
     """docstring for MqttChannelList"""
     def __init__(self, channel):
         super(MqttChannelList, self).__init__()
         self.channel = channel
-        mqttSubscribedFunctions[channel] = self
+        mqttSubscribedChannels[channel] = self
         mqttClient.subscribe(channel)
 
     def remove(self, obj):
         super(MqttChannelList, self)
         if len(self) == 0:
             mqttClient.unsubscribe(self.channel)
-            del mqttSubscribedFunctions[self.channel]
+            del mqttSubscribedChannels[self.channel]
 
 def getMqttChannel(channel):
-    if channel in mqttSubscribedFunctions:
-        return mqttSubscribedFunctions[channel]
+    if channel in mqttSubscribedChannels:
+        return mqttSubscribedChannels[channel]
     else:
-        mqttSubscribedFunctions[channel] = MqttChannelList(channel)
-        return mqttSubscribedFunctions[channel]
+        mqttSubscribedChannels[channel] = MqttChannelList(channel)
+        return mqttSubscribedChannels[channel]
 
 class MqttSubscriber(object):
     """docstring for MqttSubscriber"""

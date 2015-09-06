@@ -11,6 +11,7 @@
 # command type
 # "REQ": request
 # "RES": response
+import json
 
 from .channel import send, subscribe
 from threading import Semaphore
@@ -39,7 +40,7 @@ def getMessage(command, commandType, payload):
         "payload": payload,
         "version": MSG_VERSION
     }
-    pass
+    return message
 
 
 def sendCapReq(channel):
@@ -47,7 +48,7 @@ def sendCapReq(channel):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("CAP", "REQ", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendCapRes(channel, types, funcList):
@@ -57,7 +58,7 @@ def sendCapRes(channel, types, funcList):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("CAP", "RES", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendRunReq(channel, methodName, methodParameters, transID):
@@ -68,7 +69,7 @@ def sendRunReq(channel, methodName, methodParameters, transID):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("RUN", "REQ", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendRunRes(channel, methodName, methodReturn, transID):
@@ -79,7 +80,7 @@ def sendRunRes(channel, methodName, methodReturn, transID):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("RUN", "RES", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendSubReq(channel, methodName, methodParameters):
@@ -89,7 +90,7 @@ def sendSubReq(channel, methodName, methodParameters):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("SUB", "REQ", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendSubRes(channel, methodName, methodReturn):
@@ -99,7 +100,7 @@ def sendSubRes(channel, methodName, methodReturn):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("SUB", "RES", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendNesReq(channel, nestType):
@@ -108,7 +109,7 @@ def sendNesReq(channel, nestType):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("NES", "REQ", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def sendNesRes(channel, nestType, array):
@@ -118,12 +119,12 @@ def sendNesRes(channel, nestType, array):
         "version": PAYLOAD_VERSION
     }
     message = getMessage("NES", "RES", payload)
-    send(channel, message)
+    send(channel, json.dumps(message))
 
 
 def getCallback(msgCommand, msgType, callback):
     def msgCallback(msg):
-        msg = msg.payload
+        msg = json.loads(msg.payload.decode())
         if msg["version"] == MSG_VERSION:
             if msg["command"] != msgCommand or msg["type"] != msgType:
                 return
@@ -131,6 +132,7 @@ def getCallback(msgCommand, msgType, callback):
             callback(payload)
         else:
             raise VersionError
+    return msgCallback
 
 
 def getCapReqCallback(channel, types, funcList):
@@ -242,17 +244,18 @@ class MQTTHandler(object):
         self.registeredCapabiblity = False
         self.types = []
         self.funcList = []
-        self.capCallback = None
+        self.capCallback = lambda x: None
 
         # nes
         self.nesting = []
         self.nested = []
         self.registeredNesting = False
         self.registeredNested = False
-        self.nestingCallback = None
-        self.nestedCallback = None
+        self.nestingCallback = lambda x: None
+        self.nestedCallback = lambda x: None
 
         def mqttCallback(msg):
+            debug("mqtt msg received: ", msg)
             if self.registeredCapabiblity:
                 self.capCallback(msg)
             if self.registeredNesting:
@@ -262,15 +265,17 @@ class MQTTHandler(object):
             for msgCallback in self.msgCallbacks:
                 msgCallback(msg)
 
+        debug("subscribe to: ", self.channel)
         self.subscriber = subscribe(self.channel, mqttCallback)
 
     def callFunction(self, methodName, methodParameters):
+        debug("callFunction: ", methodParameters)
         transID = randint(TRANS_MIN, TRANS_MAX)
-        result = None
         lock = Semaphore(0)
+        lock.result = None
 
         def functionReturnCallback(returnValue):
-            result = returnValue
+            lock.result = returnValue
             self.msgCallbacks.remove(runResCallback)
             lock.release()
 
@@ -278,9 +283,20 @@ class MQTTHandler(object):
         self.msgCallbacks.append(runResCallback)
         sendRunReq(self.channel, methodName, methodParameters, transID)
         if lock.acquire(True, timeout=10):
-            return result
+            return lock.result
         else:
             raise FuncCallTimeOutError
+
+    def subscribeVariable(self, name, callback):
+        class subscriber(object):
+            def __init__(self, handler):
+                self.handler = handler
+                self.subResCallback = getSubResCallback(name, callback)
+                self.handler.msgCallback.append(self.subResCallback)
+                sendSubReq(self.handler.channel, name, {})
+            def __del__(self):
+                self.handler.msgCallback.remove(self.subResCallback)
+        return subscriber(self)
 
     def refreshCapCallback(self):
         self.capCallback = getCapReqCallback(self.channel, self.types, self.funcList)
@@ -290,6 +306,9 @@ class MQTTHandler(object):
     def registerMethod(self, funcName, funcMethod, funcParameters, subscribable=False, funcDoc=""):
         runReqCallback = getRunReqCallback(self.channel, funcName, funcMethod)
         self.msgCallbacks.append(runReqCallback)
+        if subscribable:
+            subReqCallback = getSubReqCallback(self.channel, funcName, funcMethod)
+            self.msgCallbacks.append(subReqCallback)
         funcCap = {
             "name": funcName,
             "parameters": funcParameters,
@@ -298,6 +317,9 @@ class MQTTHandler(object):
         }
         self.funcList.append(funcCap)
         self.refreshCapCallback()
+
+    def updateSubscription(self, name, value):
+        sendSubRes(self.channel, name, value)
 
     def registerTypes(self, types):
         if isinstance(types, str):

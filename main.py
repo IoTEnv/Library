@@ -89,7 +89,7 @@ class ThingList(list):
                 return
         super(ThingList, self).append(obj)
         return
-
+lean
     # clean ThingList
     # items that are older than expire_time are cleared
     def cleanList(self):
