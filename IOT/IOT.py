@@ -8,12 +8,20 @@ nearbyDevices = set()
 
 def init():
     initializeMQTT()
-
     def deviceCallback(uuid, rssi):
-        nearbyDevices.add(ContextualThing(uuid, rssi, time.time()))
-        filter(lambda contextualThing:
-               True if time.time() - contextualThing._timestamp > 60 else False,
-               nearbyDevices)
+        # print(uuid + "discovered")
+        newThing = ContextualThing(uuid, rssi, time.time())
+        # print(newThing)
+        if newThing in nearbyDevices:
+            # print("update")
+            nearbyDevices
+        else:
+            # print("add")
+            nearbyDevices.add(newThing)
+        # print(newThing)
+        # filter(lambda contextualThing:
+        #        True if time.time() - contextualThing._timestamp > 60 else False,
+        #        nearbyDevices)
 
     Bluewave.getDefaultManager().setDeviceCallback(deviceCallback)
 

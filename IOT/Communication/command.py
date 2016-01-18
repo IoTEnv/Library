@@ -163,8 +163,11 @@ def getRunReqCallback(channel, methodName, method):
             if payload["name"] == methodName:
                 parameters = payload["parameters"]
                 transID = payload["transID"]
-                result = method(*parameters)
-                sendRunRes(channel, methodName, result, transID)
+                try:
+                    result = method(*parameters)
+                    sendRunRes(channel, methodName, result, transID)
+                except:
+                    pass
         else:
             raise VersionError
 

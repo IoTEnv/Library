@@ -3,10 +3,13 @@ from .common import *
 
 ANDROID = 'ANDROID_STORAGE' in environ
 
-if ANDROID:
-    from .android import Bluetooth
-else:
-    from .linux import Bluetooth
+if sys.platform == 'linux':
+    if ANDROID:
+        from .android import Bluetooth
+    else:
+        from .linux import Bluetooth
+elif sys.platform == 'darwin' :
+    from .osx import Bluetooth
 
 defaultManager = None
 
